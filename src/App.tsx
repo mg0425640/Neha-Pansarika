@@ -4,24 +4,41 @@ import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';
 import { Home } from './pages/Home';
 import { ProductDetail } from './pages/ProductDetail';
+import { SignIn } from './pages/SignIn';
+import { SignUp } from './pages/SignUp';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { UserAddresses } from './pages/UserAddresses';
 import { CartProvider } from './context/CartContext';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
-    <CartProvider>
-      <Router>
-        <div className="min-h-screen bg-white">
-          <Header />
-          <main>
+    <AuthProvider>
+      <CartProvider>
+        <Router>
+          <div className="min-h-screen bg-white">
             <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/*" element={
+                <>
+                  <Header />
+                  <main>
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/product/:id" element={<ProductDetail />} />
+                      <Route path="/addresses" element={<UserAddresses />} />
+                    </Routes>
+                  </main>
+                  <Footer />
+                </>
+              } />
             </Routes>
-          </main>
-          <Footer />
-        </div>
-      </Router>
-    </CartProvider>
+          </div>
+        </Router>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 
