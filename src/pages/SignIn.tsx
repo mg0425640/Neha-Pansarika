@@ -15,20 +15,92 @@ export const SignIn: React.FC = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    try {
-      await signIn(formData.email, formData.password);
-      navigate('/');
-    } catch (error: any) {
-      setError(error.message || 'Failed to sign in');
-    } finally {
+  // Validation
+  if (!formData.fullName.trim()) {
+    setError('Please enter your full name');
+    setLoading(false);
+    return;
+  }
+
+  if (!formData.email.trim()) {
+    setError('Please enter your email address');
+    setLoading(false);
+    return;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(formData.email)) {
+    setError('Please enter a valid email address');
+    setLoading(false);
+    return;
+  }
+
+  if (!formData.phone.trim()) {
+    setError('Please enter your mobile number');
+    setLoading(false);
+    return;
+  }
+
+  const phoneRegex = /^[6-9]\d{9}$/;
+  if (!phoneRegex.test(formData.phone)) {
+    setError('Please enter a valid 10-digit mobile number');
+    setLoading(false);
+    return;
+  }
+
+  if (formData.password !== formData.confirmPassword) {
+    setError('Passwords do not match');
+    setLoading(false);
+    return;
+  }
+
+  if (formData.password.length < 6) {
+    setError('Password must be at least 6 characters long');
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const result = await signUp(formData.email, formData.password, {
+      full_name: formData.fullName,
+      phone: formData.phone,
+    });
+    
+    if (result?.error) {
+      setError(result.message || result.error.message || 'Failed to create account');
       setLoading(false);
+      return;
     }
-  };
+    
+    if (result?.message) {
+      setSuccessMessage(result.message);
+    }
+    
+    setSuccess(true);
+    
+    const redirectDelay = result?.message?.includes('email') ? 3000 : 2000;
+    setTimeout(() => {
+      navigate('/signin');
+    }, redirectDelay);
+  } catch (error: any) {
+    console.error('Sign up error details:', error);
+    
+    if (error.message?.includes('User already registered')) {
+      setError('An account with this email already exists. Please sign in instead.');
+    } else if (error.message?.includes('password')) {
+      setError('Password is too weak. Please use a stronger password.');
+    } else {
+      setError(error.message || 'Failed to create account. Please try again.');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
