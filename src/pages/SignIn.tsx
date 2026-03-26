@@ -15,47 +15,67 @@ export const SignIn: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('SignIn form submitted');
+    
     setError('');
     
     // Check if fields are empty
     if (!email || email.trim() === '') {
+      console.log('Validation failed: Email is empty');
       setError('Please enter your email address');
       return;
     }
     
     if (!password || password.trim() === '') {
+      console.log('Validation failed: Password is empty');
       setError('Please enter your password');
       return;
     }
     
+    console.log('Validation passed. Email:', email);
     setLoading(true);
     
     try {
-      const { error: signInError, user } = await signIn(email, password);
+      console.log('Calling signIn function...');
+      const result = await signIn(email, password);
+      console.log('SignIn result:', result);
       
-      if (signInError) {
-        if (signInError.message === 'Invalid login credentials') {
+      if (result.error) {
+        console.error('SignIn error object:', result.error);
+        console.error('SignIn error message:', result.error.message);
+        
+        if (result.error.message === 'Invalid login credentials') {
           setError('Invalid email or password. Please try again.');
-        } else if (signInError.message.includes('Email not confirmed')) {
+        } else if (result.error.message?.includes('Email not confirmed')) {
           setError('Please verify your email address before signing in.');
+        } else if (result.error.message?.includes('Invalid email')) {
+          setError('Please enter a valid email address.');
         } else {
-          setError(signInError.message || 'Failed to sign in. Please try again.');
+          setError(result.error.message || 'Failed to sign in. Please try again.');
         }
         setLoading(false);
         return;
       }
       
-      if (user) {
+      if (result.user) {
+        console.log('SignIn successful! User:', result.user);
         // Successful login
         navigate('/');
       } else {
+        console.log('SignIn completed but no user object');
         setError('Unable to sign in. Please try again.');
       }
     } catch (err: any) {
-      console.error('Sign in error:', err);
+      console.error('Unexpected error in handleSubmit:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
       setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
+      console.log('SignIn process completed');
     }
   };
 
@@ -209,7 +229,14 @@ export const SignIn: React.FC = () => {
               disabled={loading}
               className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Signing in...
+                </div>
+              ) : (
+                'Sign In'
+              )}
             </button>
           </form>
 
