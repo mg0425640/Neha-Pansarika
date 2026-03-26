@@ -1,112 +1,62 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, ShoppingBag } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, ShoppingBag, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const SignIn: React.FC = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
+  
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
-
-  // Validation
-  if (!formData.fullName.trim()) {
-    setError('Please enter your full name');
-    setLoading(false);
-    return;
-  }
-
-  if (!formData.email.trim()) {
-    setError('Please enter your email address');
-    setLoading(false);
-    return;
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(formData.email)) {
-    setError('Please enter a valid email address');
-    setLoading(false);
-    return;
-  }
-
-  if (!formData.phone.trim()) {
-    setError('Please enter your mobile number');
-    setLoading(false);
-    return;
-  }
-
-  const phoneRegex = /^[6-9]\d{9}$/;
-  if (!phoneRegex.test(formData.phone)) {
-    setError('Please enter a valid 10-digit mobile number');
-    setLoading(false);
-    return;
-  }
-
-  if (formData.password !== formData.confirmPassword) {
-    setError('Passwords do not match');
-    setLoading(false);
-    return;
-  }
-
-  if (formData.password.length < 6) {
-    setError('Password must be at least 6 characters long');
-    setLoading(false);
-    return;
-  }
-
-  try {
-    const result = await signUp(formData.email, formData.password, {
-      full_name: formData.fullName,
-      phone: formData.phone,
-    });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
     
-    if (result?.error) {
-      setError(result.message || result.error.message || 'Failed to create account');
-      setLoading(false);
+    // Check if fields are empty
+    if (!email || email.trim() === '') {
+      setError('Please enter your email address');
       return;
     }
     
-    if (result?.message) {
-      setSuccessMessage(result.message);
+    if (!password || password.trim() === '') {
+      setError('Please enter your password');
+      return;
     }
     
-    setSuccess(true);
+    setLoading(true);
     
-    const redirectDelay = result?.message?.includes('email') ? 3000 : 2000;
-    setTimeout(() => {
-      navigate('/signin');
-    }, redirectDelay);
-  } catch (error: any) {
-    console.error('Sign up error details:', error);
-    
-    if (error.message?.includes('User already registered')) {
-      setError('An account with this email already exists. Please sign in instead.');
-    } else if (error.message?.includes('password')) {
-      setError('Password is too weak. Please use a stronger password.');
-    } else {
-      setError(error.message || 'Failed to create account. Please try again.');
+    try {
+      const { error: signInError, user } = await signIn(email, password);
+      
+      if (signInError) {
+        if (signInError.message === 'Invalid login credentials') {
+          setError('Invalid email or password. Please try again.');
+        } else if (signInError.message.includes('Email not confirmed')) {
+          setError('Please verify your email address before signing in.');
+        } else {
+          setError(signInError.message || 'Failed to sign in. Please try again.');
+        }
+        setLoading(false);
+        return;
+      }
+      
+      if (user) {
+        // Successful login
+        navigate('/');
+      } else {
+        setError('Unable to sign in. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('Sign in error:', err);
+      setError(err.message || 'An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
   };
 
   return (
@@ -124,12 +74,12 @@ const handleSubmit = async (e: React.FormEvent) => {
             </div>
             
             <h1 className="text-4xl font-bold mb-6">
-              Fresh Groceries Delivered to Your Doorstep
+              Welcome Back!
             </h1>
             
             <p className="text-xl text-green-100 mb-8 leading-relaxed">
-              Join thousands of happy customers who trust Pansarika for their daily grocery needs. 
-              Get fresh, quality products delivered within 30 minutes.
+              Sign in to continue your grocery shopping experience. 
+              Fresh groceries delivered to your doorstep in minutes.
             </p>
             
             <div className="space-y-4 mb-8">
@@ -137,25 +87,28 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <div className="w-6 h-6 bg-green-400 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm">✓</span>
                 </div>
-                <span>Free delivery on orders above ₹500</span>
+                <span>Quick checkout with saved addresses</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-green-400 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm">✓</span>
                 </div>
-                <span>100% quality guarantee</span>
+                <span>View your order history</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-green-400 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm">✓</span>
                 </div>
-                <span>24/7 customer support</span>
+                <span>Manage your subscriptions</span>
               </div>
             </div>
             
-            <button className="inline-flex items-center px-8 py-4 bg-white text-green-600 font-semibold rounded-full hover:bg-green-50 transition-colors">
+            <button 
+              onClick={() => navigate('/')}
+              className="inline-flex items-center px-8 py-4 bg-white text-green-600 font-semibold rounded-full hover:bg-green-50 transition-colors"
+            >
               <ShoppingBag className="h-5 w-5 mr-2" />
-              Start Shopping
+              Continue Shopping
               <ArrowRight className="h-5 w-5 ml-2" />
             </button>
           </div>
@@ -176,30 +129,36 @@ const handleSubmit = async (e: React.FormEvent) => {
               </div>
               <span className="text-gray-900 font-bold text-2xl">Pansarika</span>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back!</h2>
-            <p className="text-gray-600">Sign in to your account to continue shopping</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h2>
+            <p className="text-gray-600">Welcome back! Please enter your details</p>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
               <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                placeholder="Enter your email"
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                  placeholder="Enter your email"
+                  autoComplete="email"
+                />
+              </div>
             </div>
 
             <div>
@@ -207,14 +166,17 @@ const handleSubmit = async (e: React.FormEvent) => {
                 Password
               </label>
               <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors pr-12"
+                  className="w-full pl-10 pr-12 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                   placeholder="Enter your password"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -227,17 +189,17 @@ const handleSubmit = async (e: React.FormEvent) => {
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center">
+              <div className="flex items-center">
                 <input
+                  id="remember-me"
                   type="checkbox"
                   className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                 />
-                <span className="ml-2 text-sm text-gray-600">Remember me</span>
-              </label>
-              <Link
-                to="/forgot-password"
-                className="text-sm text-green-600 hover:text-green-700 font-medium"
-              >
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  Remember me
+                </label>
+              </div>
+              <Link to="/forgot-password" className="text-sm text-green-600 hover:text-green-700 font-medium">
                 Forgot password?
               </Link>
             </div>
@@ -247,37 +209,27 @@ const handleSubmit = async (e: React.FormEvent) => {
               disabled={loading}
               className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          <div className="mt-8 text-center">
-            <p className="text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/signup" className="text-green-600 hover:text-green-700 font-semibold">
-                Sign up here
-              </Link>
-            </p>
-          </div>
-
-          {/* Social Login Options */}
           <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+                <span className="px-2 bg-gray-50 text-gray-500">New to Pansarika?</span>
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors">
-                <span>Google</span>
-              </button>
-              <button className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors">
-                <span>Facebook</span>
-              </button>
+            <div className="mt-6 text-center">
+              <Link
+                to="/signup"
+                className="w-full inline-flex justify-center items-center px-4 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              >
+                Create New Account
+              </Link>
             </div>
           </div>
         </div>
