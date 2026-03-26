@@ -100,6 +100,71 @@ export interface Order {
   updated_at: string;
 }
 
+export interface ProductReview {
+  id: string;
+  product_id: string;
+  user_id: string;
+  rating: number;
+  title?: string;
+  review_text?: string;
+  images?: string[];
+  is_verified_purchase: boolean;
+  helpful_count: number;
+  created_at: string;
+  updated_at: string;
+  user_profile?: UserProfile;
+  user_liked?: boolean;
+  comments?: ReviewComment[];
+}
+
+export interface ReviewComment {
+  id: string;
+  review_id: string;
+  user_id: string;
+  comment_text: string;
+  created_at: string;
+  updated_at: string;
+  user_profile?: UserProfile;
+  user_liked?: boolean;
+  likes_count?: number;
+}
+
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  full_name?: string;
+  avatar_url?: string;
+  phone?: string;
+  date_of_birth?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderTracking {
+  id: string;
+  order_id: string;
+  status: string;
+  message?: string;
+  location?: string;
+  estimated_delivery?: string;
+  created_at: string;
+}
+
+export interface ReturnRequest {
+  id: string;
+  order_id: string;
+  order_item_id: string;
+  user_id: string;
+  reason: string;
+  description?: string;
+  images?: string[];
+  status: 'pending' | 'approved' | 'rejected' | 'processing' | 'completed';
+  refund_amount?: number;
+  admin_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserAddress {
   id: string;
   user_id: string;

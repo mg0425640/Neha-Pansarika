@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Heart, Plus, Star } from 'lucide-react';
 import { Product, formatPrice } from '../../lib/supabase';
 import { useCart } from '../../context/CartContext';
@@ -45,7 +46,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <div className={`${getCardClasses()} ${className}`}>
+    <Link to={`/product/${product.id}`} className={`${getCardClasses()} ${className} block`}>
       {/* Product Image */}
       <div className="relative mb-4">
         <div className={`${variant === 'compact' ? 'h-32' : 'h-48'} bg-gray-100 rounded-xl overflow-hidden`}>
@@ -157,6 +158,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <p className="text-xs text-red-600 font-medium">Out of stock</p>
         )}
       </div>
-    </div>
+    </Link>
   );
 };
