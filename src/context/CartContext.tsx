@@ -7,6 +7,11 @@ interface CartState {
   error: string | null;
   totalItems: number;
   totalAmount: number;
+  subtotal: number;
+  deliveryFee: number;
+  taxAmount: number;
+  discountAmount: number;
+  couponCode: string | null;
 }
 
 type CartAction =
@@ -15,7 +20,10 @@ type CartAction =
   | { type: 'SET_CART'; payload: (CartItem & { product: Product })[] }
   | { type: 'ADD_ITEM'; payload: CartItem & { product: Product } }
   | { type: 'UPDATE_ITEM'; payload: { id: string; quantity: number } }
-  | { type: 'REMOVE_ITEM'; payload: string };
+  | { type: 'REMOVE_ITEM'; payload: string }
+  | { type: 'CLEAR_CART' }
+  | { type: 'APPLY_COUPON'; payload: { code: string; discount: number } }
+  | { type: 'REMOVE_COUPON' };
 
 const initialState: CartState = {
   items: [],
@@ -23,6 +31,11 @@ const initialState: CartState = {
   error: null,
   totalItems: 0,
   totalAmount: 0,
+  subtotal: 0,
+  deliveryFee: 0,
+  taxAmount: 0,
+  discountAmount: 0,
+  couponCode: null,
 };
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
@@ -33,16 +46,36 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return { ...state, error: action.payload };
     case 'SET_CART':
       const items = action.payload;
+      const subtotal = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      const deliveryFee = subtotal >= 500 ? 0 : 50;
+      const taxAmount = subtotal * 0.05; // 5% tax
+      const totalAmount = subtotal + deliveryFee + taxAmount - state.discountAmount;
       const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-      const totalAmount = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-      return { ...state, items, totalItems, totalAmount };
+      
+      return {
+        ...state,
+        items,
+        subtotal,
+        deliveryFee,
+        taxAmount,
+        totalAmount: Math.max(0, totalAmount),
+        totalItems,
+      };
     case 'ADD_ITEM':
       const newItems = [...state.items, action.payload];
+      const newSubtotal = newItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      const newDeliveryFee = newSubtotal >= 500 ? 0 : 50;
+      const newTaxAmount = newSubtotal * 0.05;
+      const newTotalAmount = newSubtotal + newDeliveryFee + newTaxAmount - state.discountAmount;
+      
       return {
         ...state,
         items: newItems,
+        subtotal: newSubtotal,
+        deliveryFee: newDeliveryFee,
+        taxAmount: newTaxAmount,
+        totalAmount: Math.max(0, newTotalAmount),
         totalItems: newItems.reduce((sum, item) => sum + item.quantity, 0),
-        totalAmount: newItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0),
       };
     case 'UPDATE_ITEM':
       const updatedItems = state.items.map(item =>
@@ -50,19 +83,57 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
           ? { ...item, quantity: action.payload.quantity }
           : item
       );
+      const updatedSubtotal = updatedItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      const updatedDeliveryFee = updatedSubtotal >= 500 ? 0 : 50;
+      const updatedTaxAmount = updatedSubtotal * 0.05;
+      const updatedTotalAmount = updatedSubtotal + updatedDeliveryFee + updatedTaxAmount - state.discountAmount;
+      
       return {
         ...state,
         items: updatedItems,
+        subtotal: updatedSubtotal,
+        deliveryFee: updatedDeliveryFee,
+        taxAmount: updatedTaxAmount,
+        totalAmount: Math.max(0, updatedTotalAmount),
         totalItems: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
-        totalAmount: updatedItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0),
       };
     case 'REMOVE_ITEM':
       const filteredItems = state.items.filter(item => item.id !== action.payload);
+      const filteredSubtotal = filteredItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      const filteredDeliveryFee = filteredSubtotal >= 500 ? 0 : 50;
+      const filteredTaxAmount = filteredSubtotal * 0.05;
+      const filteredTotalAmount = filteredSubtotal + filteredDeliveryFee + filteredTaxAmount - state.discountAmount;
+      
       return {
         ...state,
         items: filteredItems,
+        subtotal: filteredSubtotal,
+        deliveryFee: filteredDeliveryFee,
+        taxAmount: filteredTaxAmount,
+        totalAmount: Math.max(0, filteredTotalAmount),
         totalItems: filteredItems.reduce((sum, item) => sum + item.quantity, 0),
-        totalAmount: filteredItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0),
+      };
+    case 'CLEAR_CART':
+      return {
+        ...initialState,
+        loading: state.loading,
+      };
+    case 'APPLY_COUPON':
+      const discountAmount = action.payload.discount;
+      const finalAmount = state.subtotal + state.deliveryFee + state.taxAmount - discountAmount;
+      return {
+        ...state,
+        discountAmount,
+        couponCode: action.payload.code,
+        totalAmount: Math.max(0, finalAmount),
+      };
+    case 'REMOVE_COUPON':
+      const originalAmount = state.subtotal + state.deliveryFee + state.taxAmount;
+      return {
+        ...state,
+        discountAmount: 0,
+        couponCode: null,
+        totalAmount: originalAmount,
       };
     default:
       return state;
@@ -76,6 +147,8 @@ const CartContext = createContext<{
   removeFromCart: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
   loadCart: () => Promise<void>;
+  applyCoupon: (code: string) => Promise<{ success: boolean; message: string }>;
+  removeCoupon: () => void;
 } | null>(null);
 
 export const useCart = () => {
@@ -103,7 +176,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('cart_items')
         .select(`
           *,
-          product:products(*)
+          product:products(
+            *,
+            category:categories(*),
+            brand:brands(*)
+          )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -144,7 +221,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
         .select(`
           *,
-          product:products(*)
+          product:products(
+            *,
+            category:categories(*),
+            brand:brands(*)
+          )
         `)
         .single();
 
@@ -206,10 +287,62 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
-      dispatch({ type: 'SET_CART', payload: [] });
+      dispatch({ type: 'CLEAR_CART' });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: (error as Error).message });
     }
+  };
+
+  const applyCoupon = async (code: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const { data: coupon, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', code.toUpperCase())
+        .eq('is_active', true)
+        .single();
+
+      if (error || !coupon) {
+        return { success: false, message: 'Invalid coupon code' };
+      }
+
+      // Check if coupon is valid
+      const now = new Date();
+      const validFrom = new Date(coupon.valid_from);
+      const validUntil = new Date(coupon.valid_until);
+
+      if (now < validFrom || now > validUntil) {
+        return { success: false, message: 'Coupon has expired' };
+      }
+
+      // Check minimum order amount
+      if (state.subtotal < coupon.min_order_amount) {
+        return { 
+          success: false, 
+          message: `Minimum order amount is ₹${coupon.min_order_amount}` 
+        };
+      }
+
+      // Calculate discount
+      let discount = 0;
+      if (coupon.discount_type === 'percentage') {
+        discount = (state.subtotal * coupon.discount_value) / 100;
+        if (coupon.max_discount && discount > coupon.max_discount) {
+          discount = coupon.max_discount;
+        }
+      } else {
+        discount = coupon.discount_value;
+      }
+
+      dispatch({ type: 'APPLY_COUPON', payload: { code: code.toUpperCase(), discount } });
+      return { success: true, message: `Coupon applied! You saved ₹${discount}` };
+    } catch (error) {
+      return { success: false, message: 'Failed to apply coupon' };
+    }
+  };
+
+  const removeCoupon = () => {
+    dispatch({ type: 'REMOVE_COUPON' });
   };
 
   useEffect(() => {
@@ -225,6 +358,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         removeFromCart,
         clearCart,
         loadCart,
+        applyCoupon,
+        removeCoupon,
       }}
     >
       {children}
