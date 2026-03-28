@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Heart, Plus, Star } from 'lucide-react';
 import { Product, formatPrice } from '../../lib/supabase';
 import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../hooks/useWishlist';
 
 interface ProductCardProps {
   product: Product;
@@ -18,6 +19,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   className = ""
 }) => {
   const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -25,6 +27,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       await addToCart(product.id);
     } catch (error) {
       console.error('Error adding to cart:', error);
+    }
+  };
+
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      if (isInWishlist(product.id)) {
+        await removeFromWishlist(product.id);
+      } else {
+        await addToWishlist(product.id);
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
     }
   };
 
@@ -77,8 +92,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Favorite Button */}
-        <button className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-white">
-          <Heart className="h-4 w-4 text-gray-600 hover:text-red-500 transition-colors" />
+        <button 
+          onClick={handleWishlistToggle}
+          className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-white"
+        >
+          <Heart className={`h-4 w-4 transition-colors ${
+            isInWishlist(product.id) ? 'text-red-500 fill-current' : 'text-gray-600 hover:text-red-500'
+          }`} />
         </button>
 
         {/* Quick Add Button */}

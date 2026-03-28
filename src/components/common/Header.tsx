@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Menu, X, LogIn, UserPlus } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
 import { LocationSelector } from '../ui/LocationSelector';
 import { SearchBar } from '../ui/SearchBar';
 import { useCart } from '../../context/CartContext';
@@ -52,7 +52,7 @@ export const Header: React.FC = () => {
               <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
                 <span className="text-green-600 font-bold text-lg">P</span>
               </div>
-              <span className="text-white font-bold text-xl">Pansarika</span>
+              <span className="text-white font-bold text-xl ml-2">Pansarika</span>
             </button>
           </div>
 
@@ -67,8 +67,8 @@ export const Header: React.FC = () => {
             <Link to="/offers" className="text-white hover:text-green-100 transition-colors text-sm font-medium">
               Offers
             </Link>
-            <Link to="/about" className="text-white hover:text-green-100 transition-colors text-sm font-medium">
-              About
+            <Link to="/contact" className="text-white hover:text-green-100 transition-colors text-sm font-medium">
+              Contact
             </Link>
           </nav>
 
@@ -122,6 +122,13 @@ export const Header: React.FC = () => {
                             {user.email}
                           </p>
                         </div>
+                        <Link
+                          to="/dashboard"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          Dashboard
+                        </Link>
                         <Link
                           to="/profile"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -224,12 +231,12 @@ export const Header: React.FC = () => {
             >
               Offers
             </Link>
-            <Link 
-              to="/about" 
+            <Link
+              to="/contact"
               className="block text-white hover:text-green-100 py-2 text-sm font-medium"
               onClick={() => setIsMenuOpen(false)}
             >
-              About
+              Contact
             </Link>
             {!user && (
               <>

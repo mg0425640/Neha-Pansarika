@@ -65,11 +65,32 @@ export const Footer: React.FC = () => {
                 'Meat & Seafood',
                 'Bakery',
                 'Baby Food',
-                'Health Food'
+                'Health Food',
+                'Help'
               ].map((category) => (
                 <li key={category}>
                   <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">
                     {category}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Help Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Help</h3>
+            <ul className="space-y-2">
+              {[
+                'Track Order',
+                'Shipping Details',
+                'Cancel/Return Order',
+                'Refund Tracking',
+                'Raise Ticket'
+              ].map((helpItem) => (
+                <li key={helpItem}>
+                  <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">
+                    {helpItem}
                   </a>
                 </li>
               ))}
